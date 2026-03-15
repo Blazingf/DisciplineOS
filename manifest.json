@@ -1,0 +1,16 @@
+{
+  "name": "Discipline OS",
+  "short_name": "Discipline",
+  "description": "Personal Growth Tracker \u00b7 365",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0a0a0f",
+  "theme_color": "#0a0a0f",
+  "icons": [
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0iI2MwaGVyZSIgZD0iTTEyIDJMMiAxMmwxMCAxMCAxMC0xMHptMCA0LjVMOTIgMTJoMm0wIDQuNUw5MiAxMmgyeiIvPjwvc3ZnPg==",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}

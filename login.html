@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | Discipline OS</title>
+  
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#0a0a0f">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  
+  <!-- Three.js CDN for 3D UI -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <!-- Firebase SDKs -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    
+    // 🔥 USER INSTRUCTION: Replace these placeholders with your actual Firebase config! 🔥
+    const firebaseConfig = {
+      apiKey: "AIzaSyBmBDPxV-C6zhpHlWQopq9fgGRGjWIe4Ig",
+      authDomain: "discipline-os-83956.firebaseapp.com",
+      projectId: "discipline-os-83956",
+      storageBucket: "discipline-os-83956.firebasestorage.app",
+      messagingSenderId: "893107069017",
+      appId: "1:893107069017:web:ef71599c10b93a485f9148",
+      measurementId: "G-PNYEHZGSQJ"
+    };
+
+    let app, auth, db;
+    // We wrap this in a try-catch so the UI still loads even if config is invalid
+    try {
+      app = initializeApp(firebaseConfig);
+      auth = getAuth(app);
+      db = getFirestore(app);
+      window.firebaseAuth = auth;
+      window.firebaseDb = db;
+    } catch(e) {
+      console.warn("Firebase config is invalid or missing. Features will not work.");
+    }
+  </script>
+
+  <!-- App Assets -->
+  <link rel="stylesheet" href="./css/style.css">
+  
+  <style>
+    /* Specific styles for the login page */
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      overflow: hidden;
+      margin: 0;
+    }
+
+    #canvas-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+    }
+
+    .login-container {
+      position: relative;
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 40px;
+      width: 100%;
+      max-width: 400px;
+      z-index: 1;
+      
+      /* Glassmorphism styling */
+      background: rgba(30, 30, 46, 0.6);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      
+      /* Deep shadow styling */
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5), 0 0 40px 0 rgba(74, 10, 138, 0.3);
+    }
+    
+    body.light-mode .login-container {
+      background: rgba(255, 255, 255, 0.85);
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      box-shadow: 0 8px 32px 0 rgba(74, 10, 138, 0.2);
+    }
+
+    .brand-large {
+      font-family: 'Bebas Neue', cursive;
+      font-size: 48px;
+      text-align: center;
+      background: linear-gradient(90deg, #c07ef5, #4a0a8a);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 30px;
+      letter-spacing: 3px;
+    }
+
+    .auth-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 25px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .auth-tab {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-family: 'Bebas Neue', cursive;
+      font-size: 20px;
+      padding: 10px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .auth-tab.active {
+      color: var(--text);
+      border-bottom: 2px solid #4a0a8a;
+    }
+
+    .login-form {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .input-group {
+      position: relative;
+      width: 100%;
+    }
+
+    .modern-input {
+      width: 100%;
+      box-sizing: border-box;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--text);
+      padding: 12px 15px;
+      border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .modern-input:focus {
+      border-color: #c07ef5;
+      box-shadow: 0 0 10px rgba(192, 126, 245, 0.2);
+    }
+    
+    .password-toggle {
+      position: absolute;
+      right: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      transition: color 0.2s;
+    }
+    
+    .password-toggle:hover {
+      color: var(--text);
+    }
+
+    .auth-btn {
+      width: 100%;
+      padding: 14px;
+      font-size: 16px;
+      margin-top: 10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #4a0a8a;
+      transition: background 0.2s, transform 0.1s;
+      border: none;
+    }
+    
+    .auth-btn:hover {
+      background: #5d0db0;
+      transform: translateY(-1px);
+      box-shadow: 0 5px 15px rgba(74, 10, 138, 0.4);
+    }
+    
+    .auth-btn:active {
+      transform: translateY(1px);
+    }
+
+    .error-msg {
+      color: var(--danger);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      margin-top: 10px;
+      text-align: center;
+      min-height: 20px;
+    }
+    
+    .loading-spinner {
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top: 2px solid var(--text-inverse);
+      border-radius: 50%;
+      width: 16px;
+      height: 16px;
+      animation: spin 1s linear infinite;
+      display: none;
+    }
+    
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+
+</head>
+<body>
+
+  <!-- 3D Canvas Background -->
+  <div id="canvas-container"></div>
+
+  <!-- Login Form Container -->
+  <div class="login-container">
+    <h1 class="brand-large">DISCIPLINE OS</h1>
+    
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-login">SIGN IN</button>
+      <button class="auth-tab" id="tab-register">CREATE ACCOUNT</button>
+    </div>
+
+    <div class="login-form">
+      <div class="input-group">
+        <input type="email" id="email" class="modern-input" placeholder="Email Address">
+      </div>
+      <div class="input-group">
+        <input type="password" id="password" class="modern-input" placeholder="Password">
+        <button type="button" id="toggle-password" class="password-toggle" title="Toggle password visibility">
+          👁️
+        </button>
+      </div>
+      
+      <button id="btn-submit" class="btn btn-primary auth-btn">
+        <span id="btn-text">SIGN IN</span>
+        <div id="btn-spinner" class="loading-spinner"></div>
+      </button>
+      
+      <div id="error-display" class="error-msg"></div>
+    </div>
+  </div>
+
+  <script type="module" src="./js/login.js" defer></script>
+</body>
+</html>

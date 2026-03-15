@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Discipline OS</title>
+  
+  <!-- PWA meta tags -->
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#0a0a0f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64,"> <!-- prevent favicon 404 -->
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  
+  <!-- Firebase SDKs -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    
+    // 🔥 USER INSTRUCTION: Replace these placeholders with your actual Firebase config! 🔥
+    const firebaseConfig = {
+      apiKey: "AIzaSyBmBDPxV-C6zhpHlWQopq9fgGRGjWIe4Ig",
+      authDomain: "discipline-os-83956.firebaseapp.com",
+      projectId: "discipline-os-83956",
+      storageBucket: "discipline-os-83956.firebasestorage.app",
+      messagingSenderId: "893107069017",
+      appId: "1:893107069017:web:ef71599c10b93a485f9148",
+      measurementId: "G-PNYEHZGSQJ"
+    };
+
+    let app, auth, db;
+    try {
+      app = initializeApp(firebaseConfig);
+      auth = getAuth(app);
+      db = getFirestore(app);
+      
+      // Expose globally for app.js logic
+      window.firebaseAuth = auth;
+      window.firebaseDb = db;
+      window.firebaseStore = { doc, getDoc, setDoc };
+      window.firebaseSignOut = signOut;
+      
+      // Auth Guard
+      onAuthStateChanged(auth, (user) => {
+        if (!user) {
+          window.location.href = './login.html';
+        } else {
+          window.firebaseUser = user;
+          // Trigger the initial cloud load defined in app.js once user is confirmed
+          if(window.syncCloudData) {
+            window.syncCloudData();
+          }
+        }
+      });
+      
+    } catch(e) {
+      console.warn("Firebase config is invalid. App may fail to sync if not configured.", e);
+    }
+  </script>
+
+  <!-- Chart.js -->  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+  
+  <!-- App Assets -->
+  <link rel="stylesheet" href="./css/style.css">
+  <script src="./js/app.js" defer></script>
+</head>
+<body>
+
+  <!-- App Header -->
+  <header>
+    <div class="header-content">
+      <h1 class="brand">DISCIPLINE OS</h1>
+      <div class="date-display">
+        <span id="day-name" class="day-name"></span>
+        <span id="full-date" class="full-date"></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Year Progress -->
+  <div class="year-progress-container">
+    <div class="progress-labels">
+      <span>YEAR PROGRESS</span>
+      <span id="day-of-year" class="accent-text"></span>
+    </div>
+    <div class="progress-track">
+      <div id="year-bar" class="progress-fill gradient-fill"></div>
+    </div>
+  </div>
+
+  <!-- Navigation Tabs -->
+  <nav class="tabs">
+    <button class="tab-btn active" data-target="tab-today">TODAY</button>
+    <button class="tab-btn" data-target="tab-charts">CHARTS</button>
+    <button class="tab-btn" data-target="tab-heatmap">HEATMAP</button>
+    <!-- Dark/Light mode toggle -->
+    <button class="theme-toggle" id="theme-toggle" title="Toggle Theme">🌓</button>
+    <button class="theme-toggle" id="logout-btn" title="Sign Out" onclick="handleLogout()" style="margin-left: 5px; color: var(--danger);">⍈</button>
+  </nav>
+
+  <!-- Main Content Area -->
+  <main class="content-area">
+
+    <!-- TAB 1: TODAY -->
+    <section id="tab-today" class="tab-content active">
+      <!-- Stats Row -->
+      <div class="stats-grid">
+        <div class="stat-card accent-1-border">
+          <div id="stat-streak" class="stat-val">0</div>
+          <div class="stat-label">BEST STREAK (DAYS)</div>
+        </div>
+        <div class="stat-card accent-2-border">
+          <div id="stat-today" class="stat-val">0%</div>
+          <div class="stat-label">TODAY'S COMPLETION</div>
+        </div>
+        <div class="stat-card accent-3-border">
+          <div id="stat-7day" class="stat-val">0%</div>
+          <div class="stat-label">7-DAY ROLLING AVG</div>
+        </div>
+        <div class="stat-card accent-4-border">
+          <div id="stat-alltime" class="stat-val">0%</div>
+          <div class="stat-label">ALL-TIME OVERALL</div>
+        </div>
+      </div>
+
+      <!-- Pillars Grid -->
+      <div class="pillars-grid">
+        <!-- Pillar arrays rendered by JS -->
+        <div class="pillar-card border-p-physique" id="card-physique"></div>
+        <div class="pillar-card border-p-mental" id="card-mental"></div>
+        <div class="pillar-card border-p-skill" id="card-skill"></div>
+        <div class="pillar-card border-p-personal" id="card-personal"></div>
+      </div>
+    </section>
+
+    <!-- TAB 2: CHARTS -->
+    <section id="tab-charts" class="tab-content">
+      <div class="charts-wrap">
+        <div class="chart-box full-width">
+          <h2 class="chart-title">30-DAY CONSISTENCY PER PILLAR (%)</h2>
+          <div class="canvas-container" style="height: 300px;">
+            <canvas id="lineChart"></canvas>
+          </div>
+        </div>
+        <div class="charts-row">
+          <div class="chart-box half-width">
+            <h2 class="chart-title">ALL-TIME CONSISTENCY</h2>
+            <div class="canvas-container" style="height: 250px;">
+              <canvas id="barChart"></canvas>
+            </div>
+          </div>
+          <div class="chart-box half-width">
+            <h2 class="chart-title">TODAY'S BREAKDOWN</h2>
+            <div class="canvas-container" style="height: 250px;">
+              <canvas id="donutChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: HEATMAP -->
+    <section id="tab-heatmap" class="tab-content">
+      <div class="heatmap-card">
+        <h2 class="chart-title">YEAR CONTRIBUTIONS</h2>
+        <div class="heatmap-scroll">
+          <div id="heatmap-grid" class="heatmap-grid"></div>
+        </div>
+        <div class="heatmap-legend">
+          <span>LESS</span>
+          <div class="heatmap-cell" data-level="0"></div>
+          <div class="heatmap-cell" data-level="1"></div>
+          <div class="heatmap-cell" data-level="2"></div>
+          <div class="heatmap-cell" data-level="3"></div>
+          <div class="heatmap-cell" data-level="4"></div>
+          <span>MORE</span>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Modal: Edit Task -->
+  <div id="edit-modal" class="modal-overlay">
+    <div class="modal-card">
+      <h2 class="modal-title">EDIT TASK</h2>
+      <input type="text" id="edit-task-input" class="modern-input" placeholder="Task description...">
+      <div class="modal-actions">
+        <button id="btn-cancel" class="btn btn-ghost">CANCEL</button>
+        <button id="btn-delete" class="btn btn-danger">DELETE</button>
+        <button id="btn-save" class="btn btn-primary">SAVE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+</body>
+</html>
